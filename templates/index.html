@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}トップページ{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+    <p>Welcome to this page. Mr. {{ user.username }}.</p>
+    {% else %}
+    <p>Welcome to this page.</p>
+    {% endif %}
+
+
+    <p><a href="{% url 'simpleupload:home' %}">Simple File Upload</a></p>
+    <p><a href="{% url 'formupload:home' %}">Form File Upload</a></p>
+    <p><a href="{% url 'modelformupload:home' %}">ModelForm File Upload</a></p>
+    <p><a href="{% url 'azureblobupload:home' %}">Azure Blob Upload</a></p>
+
+
+    {% if user.is_authenticated %}
+    <p><a href="{% url 'logout' %}">ログアウト</a></p>
+    {% else %}
+    <p><a href="{% url 'login' %}">ログイン</a></p>
+    {% endif %}
+{% endblock %}

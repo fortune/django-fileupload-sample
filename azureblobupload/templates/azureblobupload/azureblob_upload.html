@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Azure Blob Upload{% endblock %}
+
+{% block content %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form }}
+    <button type="submit">Upload</button>
+  </form>
+
+
+  <p>
+      ダウンロードリスト:<br />
+      {% for file in uploaded_file_list %}
+      <a href="{{ file.document.url }}">{{ file.document.name }}</a><br />
+      {% endfor %}
+  </p>
+
+  <p><a href="{% url 'azureblobupload:home' %}">Reload</a></p>
+  <p><a href="{% url 'index' %}">Return to Top</a></p>
+{% endblock %}
