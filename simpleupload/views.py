@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 from django.shortcuts import render
 from django.conf import settings
@@ -14,7 +15,8 @@ def simple_upload(request):
 
     # settings.MEDIA_ROOT 下のファイル一覧を取得し、
     # それを fs.url() で URL に変換して、ダウンロード用 URL のリストをつくる。
-    uploaded_file_list = [fs.url(file) for file in os.listdir(settings.MEDIA_ROOT)]
+    media_root = pathlib.Path(settings.MEDIA_ROOT)
+    uploaded_file_list = [fs.url(p.name) for p in media_root.iterdir() if p.is_file()]
 
     if request.method == 'POST' and 'myfile' in request.FILES:
 
@@ -33,11 +35,10 @@ def simple_upload(request):
 
         title = request.POST['title']
         myfile = request.FILES['myfile']
-        #fs = FileSystemStorage()
 
         # myfile.name はクライアント側のファイル名だ。それが
         # settings の MEDIA_ROOT に指定したディレクトリに作成される。
-        # したがって、システム上では、MEDIA_ROOT/myfile.name という名前で
+        # したがって、システム上では、MEDIA_ROOT/{myfile.name} という名前で
         # アップロードファイルが作成される。ただし、同名ファイルがすでにあった場合、
         # その名前（ベース名）に _YiVN11y のようなランダムな文字列をつけた名前にして
         # 作成する。save の戻り値はその作成後の名前になる（ MEDIA_ROOT 部分は含まない）。

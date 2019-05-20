@@ -138,6 +138,6 @@ DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
 AZURE_ACCOUNT_NAME = ''
 AZURE_ACCOUNT_KEY = ''
 AZURE_CONTAINER = 'tomita'
-AZURE_URL_EXPIRATION_SECS = 60 * 3
+AZURE_URL_EXPIRATION_SECS = 60 * 3  # 生成される SAS トークンの有効期間（秒）
 AZURE_OVERWRITE_FILES = True
 AZURE_LOCATION = 'media'

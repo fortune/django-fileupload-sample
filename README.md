@@ -154,7 +154,7 @@ DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
 アカウント名やアカウントキー、コンテナ名などの設定値を `settings` モジュールに定義しておく。
 
 `django.db.models.FileField` の url を通してアクセスする `storages.backends.azure_storage.AzureStorage` の
-url() メソッドにバグがあり、返される Azure Blob ストレージに付く SAS トークンが無効で、ダウンロードできなかった。
+url() メソッドにバグがあり、返される Azure Blob ストレージへの URL に付加される SAS トークンが無効で、ダウンロードできなかった。
 そこで該当のソースを修正して、正しい SAS トークンが生成されるようにした。
 
 https://github.com/jschneier/django-storages/issues/705
