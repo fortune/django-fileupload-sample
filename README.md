@@ -159,3 +159,38 @@ url() メソッドにバグがあり、返される Azure Blob ストレージ�
 
 https://github.com/jschneier/django-storages/issues/705
 
+
+
+## azureblobupload を Shell 環境でテスト
+
+```shell
+(.venv) $ python manage.py shell
+```
+
+をプロジェクトのトップで実行し、Shell 内でアップロードのテストを手動でやってみる。ユーザの登録と、`settings` で Azure ストレージのアカウント名、アカウントキー、コンテナ名の設定は済んでいるとする。
+
+次のコードでテストできる。
+
+```python
+from django.contrib.auth.models import User
+from azureblobupload.models import BlobUploadModel
+from django.core.files import File
+
+user = User.objects.all()[0]
+file = open('project/wsgi.py', 'rb')
+wrapped_file = File(file)
+blob_upload_model = BlobUploadModel(user=user, description='test', document=wrapped_file)
+blob_upload_model.save()    # DB に保存されると同時に Azure Blob にファイルがアップロードされる。
+
+# ローカルのファイルを 'project/wsgi.py' で読み出しており、アップロード時にユーザ名をパスの先頭に
+# 入れるように models.py で実装しているのでこのようになる。
+blob_upload_model.document.name     # 'tomita/project/wsgi.py'
+
+# settings.AZURE_CONTAINER = 'tomita'
+# settings.AZURE_LOCATION = 'media'
+#
+# のように定義してあれば、URL はこのようになる。
+# settings.AZURE_URL_EXPIRATION_SECS で指定した秒数だけ有効な SAS トークン付きの URL が生成され、
+# その間だけダウンロードが可能だ。
+blob_upload_model.document.url      # https://xxxxxxx.blob.core.windows.net/tomita/media/tomita/project/wsgi.py?se=2019-05-29T10%3A24%3A52Z&sp=r&sv=2018-11-09&sr=b&sig=4V5JktU4oHUVtTt9u85jkYmCsJnQ2iqegfleyfa6Ad0%3D
+```
