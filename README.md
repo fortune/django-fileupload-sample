@@ -194,3 +194,84 @@ blob_upload_model.document.name     # 'tomita/project/wsgi.py'
 # その間だけダウンロードが可能だ。
 blob_upload_model.document.url      # https://xxxxxxx.blob.core.windows.net/tomita/media/tomita/project/wsgi.py?se=2019-05-29T10%3A24%3A52Z&sp=r&sv=2018-11-09&sr=b&sig=4V5JktU4oHUVtTt9u85jkYmCsJnQ2iqegfleyfa6Ad0%3D
 ```
+
+## FileField に登録されたファイルの削除と、Model の関係
+
+FileField に登録されたファイルを削除するには、`FileField.delete` メソッドを実行する。そうすると、基礎にある Storage クラスの `delete` メソッドが呼び出されて、ファイルを削除する。削除後の FileField は `None` になるのだが、それが DB に反映されるかどうかは `FileField.delete` メソッドにわたす `save` 引数による（デフォルトは `True`）。
+
+`modelformupload` アプリを shell 環境で実行してこのことを試してみる。
+
+```python
+from django.contrib.auth.models import User
+from modelformupload.models import FileUploadModel
+from django.core.files import File
+
+user = User.objects.all()[0]
+file = open('project/wsgi.py', 'rb')
+wrapped_file = File(file)
+model = FileUploadModel(user=user, description='test', document=wrapped_file)
+model.save()    # DB に保存されると同時にファイルストレージにファイルがアップロードされる。
+
+doc = model.document
+doc.name    # 'admin/project/wsgi.py'
+doc.url     # '/media/admin/project/wsgi.py'
+doc.path    # '/Users/kazu/Documents/samples/django_samples/django-fileupload-sample/uploaded_files/admin/project/wsgi.py'
+
+doc.storage # <django.core.files.storage.FileSystemStorage object at 0x10663aac8>
+doc.storage.exists(doc.name)    # True
+doc.storage.exists(doc.path)    # True
+doc.storage.exists('hoge/foo')  # False
+doc.storage.exists(doc.url)     # django.core.exceptions.SuspiciousFileOperation: The joined path (/media/admin/project/wsgi.py) is located outside of the base path component (/Users/kazu/Documents/samples/django_samples/django-fileupload-sample/uploaded_files)
+
+doc.delete(save=False)
+doc.name    # None
+doc.storage.exists('admin/project/wsgi.py')    # False
+doc.storage.exists('admin/project')    # True
+
+# FileField.delete メソッドによりファイルが削除され、ファイルに関連するフィールドもクリアされているが、
+# save=False で実行したので、DB には反映されていない。したがって、
+
+m = FileUploadModel.objects.get(id=model.id)
+m.document.name     # 'admin/project/wsgi.py'
+
+# のようになる。
+
+model.save()    # これで DB に反映される。
+m = FileUploadModel.objects.get(id=model.id)
+m.document.name # '' 空文字列
+
+# doc.delete(save=True) （デフォルト）であれば、ファイルを削除し、model が DB に反映される。
+```
+
+
+## Model 削除時に FileField に登録されたファイルを削除する
+
+`Model` を削除しただけでは、`FileField` に登録されているファイルはそのまま残る。`Model` 削除のタイミングでファイルも削除するにはいくつか方法があるようだが、`post_delete` シグナルでファイル削除のハンドラを登録する方法がある。
+
+`azureblobupload` アプリの Shell 環境でこのことを試してみる。
+
+```python
+from django.contrib.auth.models import User
+from azureblobupload.models import BlobUploadModel
+from django.core.files import File
+
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+
+@receiver(post_delete, sender=BlobUploadModel)
+def delete_blob(sender, instance, **kwargs):
+    instance.document.delete(save=False)    # save=False の指定は必須
+
+user = User.objects.all()[0]
+file = open('project/wsgi.py', 'rb')
+wrapped_file = File(file)
+model = BlobUploadModel(user=user, description='test', document=wrapped_file)
+model.save()    # DB に保存されると同時に Azure Blob にファイルがアップロードされる。
+
+model.document.storage.exists(model.document.name)  # True
+
+model.delete()  # DB から Model が削除され、Blob も削除される。
+
+```
+
+上のコードの `delete_blob` 関数内で、`FileField.delete` メソッドに `save=False` を指定するのはものすごく重要だ。デフォルトの `save=True` だと、ファイル削除後に `Model` を save するので、削除後の Model を復活させてしまうからだ。
