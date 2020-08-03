@@ -30,10 +30,10 @@
 仮想環境を作成し、必要なパッケージをインストールし、テスト用 Web サーバを起動する。
 
 ```shell
-$ python3 -m venv .venv
-$ source .venv/bin/activate
-(.venv) $ pip install -r requirements.txt
-(.venv) $ python manage.py runserver
+$ python3 -m venv VENV
+$ source VENV/bin/activate
+(VENV) $ pip install -r requirements.txt
+(VENV) $ python manage.py runserver
 ```
 
 これで各アプリケーションへのリンクを表示するトップページが表示される。トップページは、単にテンプレートを表示するだけの処理なので、
@@ -164,7 +164,7 @@ https://github.com/jschneier/django-storages/issues/705
 ## azureblobupload を Shell 環境でテスト
 
 ```shell
-(.venv) $ python manage.py shell
+(VENV) $ python manage.py shell
 ```
 
 をプロジェクトのトップで実行し、Shell 内でアップロードのテストを手動でやってみる。ユーザの登録と、`settings` で Azure ストレージのアカウント名、アカウントキー、コンテナ名の設定は済んでいるとする。
